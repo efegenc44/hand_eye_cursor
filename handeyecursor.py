@@ -4,6 +4,8 @@ import mediapipe as mp
 
 from enum import Enum, IntEnum
 
+from utils import clamp, get_angle, get_distance
+
 class HandEyeCursor:
     ENTER_KEY = 13
     FONT = cv2.FONT_HERSHEY_SIMPLEX
@@ -141,12 +143,3 @@ class HandEyeCursor:
 
         # (y = self.screen_height - y) beacuse we have flipped the frame
         return (int(x), int(self.screen_height - y))
-
-def clamp(value, minimum, maximum):
-    if value < minimum:
-        return minimum
-
-    if value > maximum:
-        return maximum
-
-    return value
