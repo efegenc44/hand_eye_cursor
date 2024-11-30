@@ -1,6 +1,7 @@
 import cv2
 import pyautogui
 import mediapipe as mp
+from pynput.mouse import Button, Controller
 
 from enum import Enum, IntEnum
 
@@ -46,6 +47,19 @@ class HandEyeCursor:
         self.current_config = self.Config.Right
         self.config = [None, None, None, None]
 
+        self.draw = mp.solutions.drawing_utils
+        self.mpHands = mp.solutions.hands
+        self.hands = self.mpHands.Hands(
+            static_image_mode = False,
+            model_complexity = 1,
+            min_detection_confidence = 0.7,
+            min_tracking_confidence = 0.7,
+            max_num_hands = 1
+        )
+        self.mouse = Controller()
+
+
+
     def eye_position(self, frame):
         frame_height, frame_width, _ = frame.shape
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -68,6 +82,7 @@ class HandEyeCursor:
 
     def update(self, frame):
         eye = self.eye_position(frame)
+        self.process_hands(frame)
 
         if self.debug:
             text = f"State: {self.current_state}"
@@ -143,3 +158,45 @@ class HandEyeCursor:
 
         # (y = self.screen_height - y) beacuse we have flipped the frame
         return (int(x), int(self.screen_height - y))
+
+    #methods below are for hand tracking
+    def process_hands(self, frame):
+        frameRGB = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        processed = self.hands.process(frameRGB)
+
+        if processed.multi_hand_landmarks:
+            hand_landmarks = processed.multi_hand_landmarks[0]
+            self.draw.draw_landmarks(frame, hand_landmarks, self.mpHands.HAND_CONNECTIONS)
+
+            count_of_landmarks = len(hand_landmarks.landmark)
+            if count_of_landmarks >= 21:
+                self.detect_gestures(frame, processed)
+
+    def detect_gestures(self, frame, processed):
+        index_tip = self.find_tip(processed, self.mpHands.HandLandmark.INDEX_FINGER_TIP)
+        pinky_tip = self.find_tip(processed, self.mpHands.HandLandmark.PINKY_TIP)
+        thumb_tip = self.find_tip(processed, self.mpHands.HandLandmark.THUMB_TIP)
+
+        if self.is_left_click(index_tip, thumb_tip):
+            self.mouse.press(Button.left)
+            self.mouse.release(Button.left)
+            cv2.putText(frame, "Left Click", (30, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+        if self.is_right_click(pinky_tip, thumb_tip):
+            self.mouse.press(Button.right)
+            self.mouse.release(Button.right)
+            cv2.putText(frame, "Right Click", (30, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+    def find_tip(self, processed, landmark):
+        if processed.multi_hand_landmarks:
+            hand_landmarks = processed.multi_hand_landmarks[0]
+            return hand_landmarks.landmark[landmark]
+
+        return None
+    
+    def is_left_click(self, index_tip, thumb_tip):
+        return get_distance(index_tip, thumb_tip) < 50
+
+    def is_right_click(self, pinky_tip, thumb_tip):
+        return get_distance(pinky_tip, thumb_tip) < 100
+
