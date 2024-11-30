@@ -1,9 +1,9 @@
 import cv2
 import pyautogui
 import mediapipe as mp
-from pynput.mouse import Button, Controller
 
 from enum import Enum, IntEnum
+import time
 
 from utils import clamp, get_angle, get_distance
 
@@ -35,7 +35,7 @@ class HandEyeCursor:
                 case self.Down: return "En Asagi Orta"
                 case self.Up: return "En Yukari Orta"
 
-    def __init__(self, debug=False):
+    def __init__(self, debug=False, reset_interval_seconds=1):
         # pyautogui by default quits when cursor goes one of the corners
         # to not let softlock yourself, but we can use 'q' to quit
         pyautogui.FAILSAFE = False
@@ -46,7 +46,13 @@ class HandEyeCursor:
         self.current_state = self.State.Config
         self.current_config = self.Config.Right
         self.config = [None, None, None, None]
+        
 
+        self.left_click_triggered = False
+        self.right_click_triggered = False
+        self.last_click_time = time.time()
+        self.reset_interval_seconds = reset_interval_seconds
+        
         self.draw = mp.solutions.drawing_utils
         self.mpHands = mp.solutions.hands
         self.hands = self.mpHands.Hands(
@@ -56,7 +62,6 @@ class HandEyeCursor:
             min_tracking_confidence = 0.7,
             max_num_hands = 1
         )
-        self.mouse = Controller()
 
 
 
@@ -161,6 +166,8 @@ class HandEyeCursor:
 
     #methods below are for hand tracking
     def process_hands(self, frame):
+        self.reset_click_flags()
+
         frameRGB = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         processed = self.hands.process(frameRGB)
 
@@ -169,7 +176,7 @@ class HandEyeCursor:
             self.draw.draw_landmarks(frame, hand_landmarks, self.mpHands.HAND_CONNECTIONS)
 
             count_of_landmarks = len(hand_landmarks.landmark)
-            if count_of_landmarks >= 21:
+            if count_of_landmarks >= 21 and (self.debug or self.State.Cursor):
                 self.detect_gestures(frame, processed)
 
     def detect_gestures(self, frame, processed):
@@ -177,15 +184,17 @@ class HandEyeCursor:
         pinky_tip = self.find_tip(processed, self.mpHands.HandLandmark.PINKY_TIP)
         thumb_tip = self.find_tip(processed, self.mpHands.HandLandmark.THUMB_TIP)
 
-        if self.is_left_click(index_tip, thumb_tip):
-            self.mouse.press(Button.left)
-            self.mouse.release(Button.left)
+        if self.is_left_click(index_tip, thumb_tip) and not self.left_click_triggered:
+            pyautogui.mouseDown(button="left")
+            pyautogui.mouseUp(button="left")
             cv2.putText(frame, "Left Click", (30, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            self.left_click_triggered = True
 
-        if self.is_right_click(pinky_tip, thumb_tip):
-            self.mouse.press(Button.right)
-            self.mouse.release(Button.right)
+        if self.is_right_click(pinky_tip, thumb_tip) and not self.right_click_triggered:
+            pyautogui.mouseDown(button="right")
+            pyautogui.mouseUp(button="right")
             cv2.putText(frame, "Right Click", (30, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            self.right_click_triggered = True
 
     def find_tip(self, processed, landmark):
         if processed.multi_hand_landmarks:
@@ -199,4 +208,11 @@ class HandEyeCursor:
 
     def is_right_click(self, pinky_tip, thumb_tip):
         return get_distance(pinky_tip, thumb_tip) < 100
+    
+    def reset_click_flags(self):
+        current_time = time.time()
+        if current_time - self.last_click_time >= self.reset_interval_seconds:
+            self.left_click_triggered = False
+            self.right_click_triggered = False
+            self.last_click_time = current_time
 
