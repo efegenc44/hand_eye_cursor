@@ -10,7 +10,7 @@ def main():
         _, frame = cam.read()
         frame = cv2.flip(frame, 1)
 
-        cursor.update(cursor.eye_position(frame), frame)
+        cursor.update(frame)
 
         if cv2.waitKey(1) == ord("q"):
             break

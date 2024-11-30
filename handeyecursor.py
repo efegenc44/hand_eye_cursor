@@ -64,7 +64,9 @@ class HandEyeCursor:
 
         return eye
 
-    def update(self, eye, frame):
+    def update(self, frame):
+        eye = self.eye_position(frame)
+
         if self.debug:
             text = f"State: {self.current_state}"
             size = cv2.getTextSize(text, self.FONT, 0.75, 1)[0]
