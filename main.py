@@ -4,7 +4,7 @@ from handeyecursor import HandEyeCursor
 
 def main():
     cam = cv2.VideoCapture(0)
-    cursor = HandEyeCursor()
+    cursor = HandEyeCursor(debug=True)
 
     while True:
         _, frame = cam.read()

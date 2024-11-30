@@ -32,11 +32,12 @@ class HandEyeCursor:
                 case self.Down: return "En Asagi Orta"
                 case self.Up: return "En Yukari Orta"
 
-    def __init__(self):
+    def __init__(self, debug=False):
         # pyautogui by default quits when cursor goes one of the corners
         # to not let softlock yourself, but we can use 'q' to quit
         pyautogui.FAILSAFE = False
 
+        self.debug = debug
         self.face_mesh = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
         self.screen_width, self.screen_height = pyautogui.size()
         self.current_state = self.State.Config
@@ -58,15 +59,17 @@ class HandEyeCursor:
             y = int((left_pupil.y + right_pupil.y) * frame_height) // 2
 
             eye = (x, y)
-            cv2.circle(frame, eye, 3, (0, 255, 0))
+            if self.debug:
+                cv2.circle(frame, eye, 3, (0, 255, 0))
 
         return eye
 
     def update(self, eye, frame):
-        text = f"State: {self.current_state}"
-        size = cv2.getTextSize(text, self.FONT, 0.75, 1)[0]
-        cv2.putText(frame, text, (0, frame.shape[0] - size[1]),
-                    self.FONT, 0.75, (0, 0, 255), 2)
+        if self.debug:
+            text = f"State: {self.current_state}"
+            size = cv2.getTextSize(text, self.FONT, 0.75, 1)[0]
+            cv2.putText(frame, text, (0, frame.shape[0] - size[1]),
+                        self.FONT, 0.75, (0, 0, 255), 2)
 
         text = "Cikmak icin 'q'"
         size = cv2.getTextSize(text, self.FONT, 0.75, 1)[0]
@@ -80,12 +83,14 @@ class HandEyeCursor:
                 self.cursor(eye, frame)
 
     def cursor(self, eye, frame):
-        text = f"Eye (in frame): {eye}"
-        cv2.putText(frame, text, (30, 30), self.FONT, 1, (255, 0, 0), 2)
-
         screen_pos = self.eye_to_screen_pos(eye)
-        text = f"Cursor (in screen): {screen_pos}"
-        cv2.putText(frame, text, (30, 60), self.FONT, 1, (255, 0, 0), 2)
+
+        if self.debug:
+            text = f"Eye (in frame): {eye}"
+            cv2.putText(frame, text, (30, 30), self.FONT, 1, (255, 0, 0), 2)
+
+            text = f"Cursor (in screen): {screen_pos}"
+            cv2.putText(frame, text, (30, 60), self.FONT, 1, (255, 0, 0), 2)
 
         # 0.1 is for smoothing the movement a bit
         pyautogui.moveTo(*screen_pos, 0.1)
@@ -117,7 +122,8 @@ class HandEyeCursor:
             self.config[self.current_config] = value
             self.current_config += 1
 
-            print(f"value: {type(value)}; new config: {self.current_config}")
+            if self.debug:
+                print(f"value: {value}; new config: {self.current_config}")
 
             if self.current_config > self.Config.Up:
                 self.current_state = self.State.Cursor
