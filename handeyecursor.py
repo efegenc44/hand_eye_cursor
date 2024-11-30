@@ -76,8 +76,8 @@ class HandEyeCursor:
             left_pupil = landmarks[0].landmark[self.LEFT_PUPIL]
             right_pupil = landmarks[0].landmark[self.RIGTH_PUPIL]
 
-            x = int((left_pupil.x + right_pupil.x) * frame_width) // 2
-            y = int((left_pupil.y + right_pupil.y) * frame_height) // 2
+            x = round((left_pupil.x + right_pupil.x) * frame_width / 2)
+            y = round((left_pupil.y + right_pupil.y) * frame_height / 2)
 
             eye = (x, y)
             if self.debug:
