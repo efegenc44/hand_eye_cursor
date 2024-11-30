@@ -176,7 +176,7 @@ class HandEyeCursor:
             self.draw.draw_landmarks(frame, hand_landmarks, self.mpHands.HAND_CONNECTIONS)
 
             count_of_landmarks = len(hand_landmarks.landmark)
-            if count_of_landmarks >= 21 and (self.debug or self.State.Cursor):
+            if count_of_landmarks >= 21 and (self.debug or self.current_state == self.State.Cursor):
                 self.detect_gestures(frame, processed)
 
     def detect_gestures(self, frame, processed):
