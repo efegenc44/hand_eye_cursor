@@ -35,7 +35,7 @@ class HandEyeCursor:
                 case self.Down: return "En Asagi Orta"
                 case self.Up: return "En Yukari Orta"
 
-    def __init__(self, debug=False, reset_interval_seconds=0.5, dragging_threshold=0.4):
+    def __init__(self, debug=False, reset_interval_seconds=0.7, dragging_threshold=0.3):
         # pyautogui by default quits when cursor goes one of the corners
         # to not let softlock yourself, but we can use 'q' to quit
         pyautogui.FAILSAFE = False
@@ -118,8 +118,7 @@ class HandEyeCursor:
             text = f"Cursor (in screen): {screen_pos}"
             cv2.putText(frame, text, (30, 60), self.FONT, 1, (255, 0, 0), 2)
 
-        # 0.1 is for smoothing the movement a bit
-        pyautogui.moveTo(*screen_pos, 0.1)
+        pyautogui.moveTo(*screen_pos)
 
     def configuration(self, eye, frame):
         text = f"Ekranin {self.current_config}sina bakip"
