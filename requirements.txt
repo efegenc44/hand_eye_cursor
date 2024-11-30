@@ -1,3 +1,4 @@
 opencv-python
 pyautogui
 mediapipe
+numpy

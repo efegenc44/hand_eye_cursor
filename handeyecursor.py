@@ -3,6 +3,9 @@ import pyautogui
 import mediapipe as mp
 
 from enum import Enum, IntEnum
+import time
+
+from utils import clamp, get_angle, get_distance
 
 class HandEyeCursor:
     ENTER_KEY = 13
@@ -32,7 +35,7 @@ class HandEyeCursor:
                 case self.Down: return "En Asagi Orta"
                 case self.Up: return "En Yukari Orta"
 
-    def __init__(self, debug=False):
+    def __init__(self, debug=False, reset_interval_seconds=1):
         # pyautogui by default quits when cursor goes one of the corners
         # to not let softlock yourself, but we can use 'q' to quit
         pyautogui.FAILSAFE = False
@@ -43,6 +46,24 @@ class HandEyeCursor:
         self.current_state = self.State.Config
         self.current_config = self.Config.Right
         self.config = [None, None, None, None]
+        
+
+        self.left_click_triggered = False
+        self.right_click_triggered = False
+        self.last_click_time = time.time()
+        self.reset_interval_seconds = reset_interval_seconds
+        
+        self.draw = mp.solutions.drawing_utils
+        self.mpHands = mp.solutions.hands
+        self.hands = self.mpHands.Hands(
+            static_image_mode = False,
+            model_complexity = 1,
+            min_detection_confidence = 0.7,
+            min_tracking_confidence = 0.7,
+            max_num_hands = 1
+        )
+
+
 
     def eye_position(self, frame):
         frame_height, frame_width, _ = frame.shape
@@ -66,6 +87,7 @@ class HandEyeCursor:
 
     def update(self, frame):
         eye = self.eye_position(frame)
+        self.process_hands(frame)
 
         if self.debug:
             text = f"State: {self.current_state}"
@@ -142,11 +164,55 @@ class HandEyeCursor:
         # (y = self.screen_height - y) beacuse we have flipped the frame
         return (int(x), int(self.screen_height - y))
 
-def clamp(value, minimum, maximum):
-    if value < minimum:
-        return minimum
+    #methods below are for hand tracking
+    def process_hands(self, frame):
+        self.reset_click_flags()
 
-    if value > maximum:
-        return maximum
+        frameRGB = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        processed = self.hands.process(frameRGB)
 
-    return value
+        if processed.multi_hand_landmarks:
+            hand_landmarks = processed.multi_hand_landmarks[0]
+            self.draw.draw_landmarks(frame, hand_landmarks, self.mpHands.HAND_CONNECTIONS)
+
+            count_of_landmarks = len(hand_landmarks.landmark)
+            if count_of_landmarks >= 21 and (self.debug or self.State.Cursor):
+                self.detect_gestures(frame, processed)
+
+    def detect_gestures(self, frame, processed):
+        index_tip = self.find_tip(processed, self.mpHands.HandLandmark.INDEX_FINGER_TIP)
+        pinky_tip = self.find_tip(processed, self.mpHands.HandLandmark.PINKY_TIP)
+        thumb_tip = self.find_tip(processed, self.mpHands.HandLandmark.THUMB_TIP)
+
+        if self.is_left_click(index_tip, thumb_tip) and not self.left_click_triggered:
+            pyautogui.mouseDown(button="left")
+            pyautogui.mouseUp(button="left")
+            cv2.putText(frame, "Left Click", (30, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            self.left_click_triggered = True
+
+        if self.is_right_click(pinky_tip, thumb_tip) and not self.right_click_triggered:
+            pyautogui.mouseDown(button="right")
+            pyautogui.mouseUp(button="right")
+            cv2.putText(frame, "Right Click", (30, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            self.right_click_triggered = True
+
+    def find_tip(self, processed, landmark):
+        if processed.multi_hand_landmarks:
+            hand_landmarks = processed.multi_hand_landmarks[0]
+            return hand_landmarks.landmark[landmark]
+
+        return None
+    
+    def is_left_click(self, index_tip, thumb_tip):
+        return get_distance(index_tip, thumb_tip) < 50
+
+    def is_right_click(self, pinky_tip, thumb_tip):
+        return get_distance(pinky_tip, thumb_tip) < 100
+    
+    def reset_click_flags(self):
+        current_time = time.time()
+        if current_time - self.last_click_time >= self.reset_interval_seconds:
+            self.left_click_triggered = False
+            self.right_click_triggered = False
+            self.last_click_time = current_time
+
