@@ -1,4 +1,3 @@
-from operator import le
 import cv2
 import pyautogui
 import mediapipe as mp
@@ -14,6 +13,13 @@ class State(Enum):
     Config = 0
     Cursor = 1
 
+class Config:
+    def __init__(self):
+        self.right = None
+        self.left = None
+        self.down = None
+        self.up = None
+
 pyautogui.FAILSAFE = False
 
 face_mesh = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
@@ -21,18 +27,11 @@ screen_width, screen_height = pyautogui.size()
 
 cam = cv2.VideoCapture(0)
 
-right = None
-left = None
-up = None
-down = None
-
 def main():
-    global right, left, up, down
-
-    done = False
+    config = Config()
     state = State.Config
     current = "right"
-    while not done:
+    while True:
         _success, frame = cam.read()
         frame = cv2.flip(frame, 1) 
         frame_height, frame_width, _ = frame.shape
@@ -60,9 +59,9 @@ def main():
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0))
 
                         if cv2.waitKey(1) == ENTER_KEY:
-                            right = pos
+                            config.right = pos
 
-                        if right:
+                        if config.right:
                             current = "left"
 
                     case "left":
@@ -70,9 +69,9 @@ def main():
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0))
 
                         if cv2.waitKey(1) == ENTER_KEY:
-                            left = pos
+                            config.left = pos
 
-                        if left:
+                        if config.left:
                             current = "down"
 
                     case "down":
@@ -80,9 +79,9 @@ def main():
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0))
 
                         if cv2.waitKey(1) == ENTER_KEY:
-                            down = pos
+                            config.down = pos
 
-                        if down:
+                        if config.down:
                             current = "up"
 
                     case "up":
@@ -90,28 +89,28 @@ def main():
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0))
 
                         if cv2.waitKey(1) == ENTER_KEY:
-                            up = pos
+                            config.up = pos
             
-                        if up:
+                        if config.up:
                             current = "done"
             
                     case "done":
-                        print("right", right)
-                        print("left", left)
-                        print("down", down)
-                        print("up", up)
+                        print("right", config.right)
+                        print("left", config.left)
+                        print("down", config.down)
+                        print("up", config.up)
                         state = State.Cursor
 
             case State.Cursor:
-                move_cursor(x, y)
+                move_cursor(x, y, config)
                 if cv2.waitKey(1) == ord("q"):
                     break
 
         cv2.imshow("Hand Eye Cursor", frame)
 
-def move_cursor(x, y):
-    y = (down[1] - y) / (down[1] - up[1]) * screen_height
-    x = ((x - left[0]) / (right[0] - left[0])) * screen_width
+def move_cursor(x, y, config):
+    y = (config.down[1] - y) / (config.down[1] - config.up[1]) * screen_height
+    x = ((x - config.left[0]) / (config.right[0] - config.left[0])) * screen_width
 
     y = clamp(y, 0, screen_height) 
     x = clamp(x, 0, screen_width) 
