@@ -46,13 +46,13 @@ class HandEyeCursor:
         self.current_state = self.State.Config
         self.current_config = self.Config.Right
         self.config = [None, None, None, None]
-        
+
 
         self.left_click_triggered = False
         self.right_click_triggered = False
         self.last_click_time = time.time()
         self.reset_interval_seconds = reset_interval_seconds
-        
+
         self.draw = mp.solutions.drawing_utils
         self.mpHands = mp.solutions.hands
         self.hands = self.mpHands.Hands(
@@ -161,7 +161,7 @@ class HandEyeCursor:
         x = clamp(x * self.screen_width, 0, self.screen_width)
         y = clamp(y * self.screen_height, 0, self.screen_height)
 
-        # (y = self.screen_height - y) beacuse we have flipped the frame
+        # (y = self.screen_height - y) because y increases downwards
         return (int(x), int(self.screen_height - y))
 
     #methods below are for hand tracking
@@ -202,13 +202,13 @@ class HandEyeCursor:
             return hand_landmarks.landmark[landmark]
 
         return None
-    
+
     def is_left_click(self, index_tip, thumb_tip):
         return get_distance(index_tip, thumb_tip) < 50
 
     def is_right_click(self, pinky_tip, thumb_tip):
         return get_distance(pinky_tip, thumb_tip) < 100
-    
+
     def reset_click_flags(self):
         current_time = time.time()
         if current_time - self.last_click_time >= self.reset_interval_seconds:
