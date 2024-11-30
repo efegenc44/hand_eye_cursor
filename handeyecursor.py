@@ -139,7 +139,7 @@ class HandEyeCursor:
         x = clamp(x * self.screen_width, 0, self.screen_width)
         y = clamp(y * self.screen_height, 0, self.screen_height)
 
-        # (y = self.screen_height - y) beacuse we have flipped the frame
+        # (y = self.screen_height - y) beacuse y increases downwards
         return (int(x), int(self.screen_height - y))
 
 def clamp(value, minimum, maximum):
