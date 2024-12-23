@@ -112,13 +112,14 @@ class HandEyeCursor:
         screen_pos = self.eye_to_screen_pos(eye)
 
         if self.debug:
-            text = f"Eye (in frame): {eye}"
+            text = f"Eye (in frame): {eye if screen_pos else "No eyes in frame"}"
             cv2.putText(frame, text, (30, 30), self.FONT, 1, (255, 0, 0), 2)
 
-            text = f"Cursor (in screen): {screen_pos}"
+            text = f"Cursor (in screen): {screen_pos if screen_pos else "No eyes in frame"}"
             cv2.putText(frame, text, (30, 60), self.FONT, 1, (255, 0, 0), 2)
 
-        pyautogui.moveTo(*screen_pos)
+        if screen_pos:
+            pyautogui.moveTo(*screen_pos)
 
     def configuration(self, eye, frame):
         text = f"Ekranin {self.current_config}sina bakip"
@@ -154,9 +155,11 @@ class HandEyeCursor:
                 self.current_state = self.State.Cursor
 
     def eye_to_screen_pos(self, eye):
+        if not eye:
+            return None
+
         [right, left, down, up] = self.config
 
-        # TODO: When there are no eyes in the frame eye is None
         x = (eye[0] - left[0]) / (right[0] - left[0])
         y = (down[1] - eye[1]) / (down[1] - up[1])
 
