@@ -35,7 +35,7 @@ class HandEyeCursor:
                 case self.Down: return "En Asagi Orta"
                 case self.Up: return "En Yukari Orta"
 
-    def __init__(self, debug=False, reset_interval_seconds=0.7, dragging_threshold=0.3):
+    def __init__(self, debug=False, reset_interval_seconds=1, dragging_threshold=0.3):
         # pyautogui by default quits when cursor goes one of the corners
         # to not let softlock yourself, but we can use 'q' to quit
         pyautogui.FAILSAFE = False
@@ -156,6 +156,7 @@ class HandEyeCursor:
     def eye_to_screen_pos(self, eye):
         [right, left, down, up] = self.config
 
+        # TODO: When there are no eyes in the frame eye is None
         x = (eye[0] - left[0]) / (right[0] - left[0])
         y = (down[1] - eye[1]) / (down[1] - up[1])
 
@@ -185,25 +186,28 @@ class HandEyeCursor:
         pinky_tip = self.find_tip(processed, self.mpHands.HandLandmark.PINKY_TIP)
         thumb_tip = self.find_tip(processed, self.mpHands.HandLandmark.THUMB_TIP)
 
-        if self.is_left_click(index_tip, thumb_tip) and not self.left_click_triggered and not self.dragging:
-            pyautogui.mouseDown(button="left")
-            pyautogui.mouseUp(button="left")
-            cv2.putText(frame, "Left Click", (30, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-            self.left_click_triggered = True
+        if self.is_left_click(index_tip, thumb_tip) and not self.dragging and not self.left_click_triggered:
             self.drag_start_time = time.time()
-
-        if self.dragging:
-            cv2.putText(frame, "Dragging", (30, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            self.left_click_triggered = True
 
         if self.is_left_click(index_tip, thumb_tip) and self.left_click_triggered:
             if time.time() - self.drag_start_time > self.dragging_threshold:
                 pyautogui.mouseDown(button="left")
                 self.dragging = True
+                self.left_click_triggered = False
+
+        if not self.is_left_click(index_tip, thumb_tip) and self.left_click_triggered:
+            pyautogui.mouseDown(button="left")
+            pyautogui.mouseUp(button="left")
+            cv2.putText(frame, "Left Click", (30, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            self.left_click_triggered = False
 
         if self.dragging and not self.is_left_click(index_tip, thumb_tip):
             pyautogui.mouseUp(button="left")
             self.dragging = False
 
+        if self.dragging:
+            cv2.putText(frame, "Dragging", (30, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
         if self.is_right_click(pinky_tip, thumb_tip) and not self.right_click_triggered:
             pyautogui.mouseDown(button="right")
@@ -228,7 +232,5 @@ class HandEyeCursor:
     def reset_click_flags(self):
         current_time = time.time()
         if current_time - self.last_click_time >= self.reset_interval_seconds:
-            self.left_click_triggered = False
             self.right_click_triggered = False
             self.last_click_time = current_time
-
