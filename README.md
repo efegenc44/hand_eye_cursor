@@ -1,4 +1,4 @@
-# Hand Eye Cursor
+# Handye Cursor
 
 ### This is the project for INF352 Introduction to Human-Computer Interaction course at Galatasaray University
 

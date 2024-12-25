@@ -1,10 +1,10 @@
 import cv2
 
-from handeyecursor import HandEyeCursor
+from handyecursor import HandyeCursor
 
 def main():
     cam = cv2.VideoCapture(0)
-    cursor = HandEyeCursor(debug=True)
+    cursor = HandyeCursor(debug=True)
 
     while True:
         _, frame = cam.read()
@@ -15,7 +15,7 @@ def main():
         if cv2.waitKey(1) == ord("q"):
             break
 
-        cv2.imshow("Hand Eye Cursor", frame)
+        cv2.imshow("Handye Cursor", frame)
 
 if __name__ == "__main__":
     main()

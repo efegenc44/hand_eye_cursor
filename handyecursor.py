@@ -7,7 +7,7 @@ import time
 
 from utils import clamp, get_angle, get_distance
 
-class HandEyeCursor:
+class HandyeCursor:
     ENTER_KEY = 13
     FONT = cv2.FONT_HERSHEY_SIMPLEX
     LEFT_PUPIL = 468
