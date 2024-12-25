@@ -35,7 +35,7 @@ class HandEyeCursor:
                 case self.Down: return "En Asagi Orta"
                 case self.Up: return "En Yukari Orta"
 
-    def __init__(self, debug=False, reset_interval_seconds=1, dragging_threshold=0.3):
+    def __init__(self, debug=False, reset_interval_seconds=1, dragging_threshold=0.6, double_click_threshold=0.3):
         # pyautogui by default quits when cursor goes one of the corners
         # to not let softlock yourself, but we can use 'q' to quit
         pyautogui.FAILSAFE = False
@@ -53,6 +53,7 @@ class HandEyeCursor:
         self.drag_start_time = 0
         self.dragging = False
         self.dragging_threshold = dragging_threshold
+        self.double_click_threshold = double_click_threshold
         self.reset_interval_seconds = reset_interval_seconds
 
         self.draw = mp.solutions.drawing_utils
@@ -200,9 +201,17 @@ class HandEyeCursor:
                 self.left_click_triggered = False
 
         if not self.is_left_click(index_tip, thumb_tip) and self.left_click_triggered:
-            pyautogui.mouseDown(button="left")
-            pyautogui.mouseUp(button="left")
-            cv2.putText(frame, "Left Click", (30, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            if time.time() - self.drag_start_time > self.double_click_threshold:
+                pyautogui.mouseDown(button="left")
+                pyautogui.mouseUp(button="left")
+                pyautogui.mouseDown(button="left")
+                pyautogui.mouseUp(button="left")
+                cv2.putText(frame, "Double Click", (30, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            else:
+                pyautogui.mouseDown(button="left")
+                pyautogui.mouseUp(button="left")
+                cv2.putText(frame, "Left Click", (30, 250), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
             self.left_click_triggered = False
 
         if self.dragging and not self.is_left_click(index_tip, thumb_tip):

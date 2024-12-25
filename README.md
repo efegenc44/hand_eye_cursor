@@ -13,5 +13,6 @@ python main.py
 ### Usage
 - Cursor follows where you look at the screen
 - Left click is triggered by joining thumb and index fingers
-- Dragging is triggered by holding thumb and index fingers joint
+- Dragging is triggered by holding thumb and index fingers joint continuously
+- Double click is triggered by holding thumb and index fingers joint for a short time
 - Right click is triggered by joining thumb and pinky fingers
